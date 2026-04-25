@@ -12,10 +12,8 @@ Detect local GPU (mobile) and CPU (desktop) models via PowerShell, then query th
 ## 文件清单 / File List
 | 文件名 / Script        | 用途 / Purpose                         |
 | ----------------------- | -------------------------------------- |
-| `Get-GpuRank.ps1`       | 显卡排名查询 / GPU ranking             |
-| `Get-CpuRank.ps1`       | CPU 排名查询 / CPU ranking             |
-| `Get-HardwareRank.ps1`  | 一键查询显卡 + CPU / Check both at once |
-| `hardware_rank.md`      | 维护文档 / Maintenance doc             |
+| `cpu-gpu-rank.ps1`  | 一键查询显卡 + CPU / Check both at once |
+| `cpu-gpu-rank.md`      | 维护文档 / Maintenance doc             |
 
 ## 脚本核心流程 / Core Logic
 1. 通过 `Get-CimInstance` 获取硬件名称（显卡用 `Win32_VideoController`，CPU 用 `Win32_Processor`）。  
