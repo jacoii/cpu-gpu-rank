@@ -16,18 +16,4 @@
 ## 📦 Files
 | Script                  | Description                               |
 | ----------------------- | ----------------------------------------- |
-| `Get-GpuRank.ps1`       | Query GPU (mobile) ranking                |
-| `Get-CpuRank.ps1`       | Query CPU (desktop) ranking               |
-| `Get-HardwareRank.ps1`  | Check both GPU and CPU at once           |
-
-## 🚀 Quick Start
-```powershell
-# Clone this repository
-git clone https://github.com/your-username/hardware-rank-checker.git
-cd hardware-rank-checker
-
-# Allow script execution (once per session)
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-
-# Run the combined checker
-.\Get-HardwareRank.ps1
+| `cpu-gpu-rank.ps1`  | Check both GPU and CPU at once           |
