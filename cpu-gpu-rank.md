@@ -1,47 +1,66 @@
-# 显卡排名查询工具（纯 PowerShell 版）
+# 硬件排名查询工具 / Hardware Rank Checker
 
-## 项目概述
-通过 PowerShell 直接检测本机显卡型号，并调用 apihz.cn 的笔记本显卡天梯 API 获取对应排名。
+## 项目概述 / Overview
+通过 PowerShell 检测本机显卡（笔记本移动版）和 CPU（桌面版）型号，调用 apihz.cn 天梯 API 查询排名。  
+Detect local GPU (mobile) and CPU (desktop) models via PowerShell, then query their tier rankings from apihz.cn API.
 
-## 适用环境
-- **操作系统**：Windows 10 / Windows 11
-- **PowerShell 版本**：5.1 或更高（系统自带）
-- **网络要求**：可访问 `cn.apihz.cn`
+## 适用环境 / Requirements
+- **操作系统 / OS**：Windows 10 / Windows 11  
+- **PowerShell**：5.1 或更高 / 5.1 or later  
+- **网络 / Network**：需能访问 `cn.apihz.cn` / Must be able to reach `cn.apihz.cn`
 
-## 文件清单
-| 文件名             | 用途                         |
-| ------------------ | ---------------------------- |
-| `Get-GpuRank.ps1`  | 主查询脚本                   |
-| `gpu_rank.md`      | 维护文档                     |
+## 文件清单 / File List
+| 文件名 / Script        | 用途 / Purpose                         |
+| ----------------------- | -------------------------------------- |
+| `Get-GpuRank.ps1`       | 显卡排名查询 / GPU ranking             |
+| `Get-CpuRank.ps1`       | CPU 排名查询 / CPU ranking             |
+| `Get-HardwareRank.ps1`  | 一键查询显卡 + CPU / Check both at once |
+| `hardware_rank.md`      | 维护文档 / Maintenance doc             |
 
-## 脚本流程
-1. 使用 `Get-CimInstance Win32_VideoController` 获取所有显卡名称。
-2. 调用 API `https://cn.apihz.cn/api/bang/xianka2.php` 获取最新排名列表。
-3. 将本地显卡名称与榜单条目模糊匹配（`*ModelName*`），输出 `top` 字段值。
-4. 匹配失败时提示“未在榜单中找到”。
+## 脚本核心流程 / Core Logic
+1. 通过 `Get-CimInstance` 获取硬件名称（显卡用 `Win32_VideoController`，CPU 用 `Win32_Processor`）。  
+   Retrieve hardware name via `Get-CimInstance` (GPU: `Win32_VideoController`, CPU: `Win32_Processor`).
+2. 调用对应 API 获取天梯数据。  
+   Call the corresponding API to fetch tier list data.
+3. 使用忽略大小写的安全包含匹配（`String.IndexOf`）将本地名称与榜单条目比对，输出排名。  
+   Use case-insensitive safe substring matching (`String.IndexOf`) to compare local name with list entries and output rank.
+4. 匹配失败时提示“未在榜单中找到”。  
+   Show “not found” if no match.
 
-## API 说明
-- **接口地址**：`https://cn.apihz.cn/api/bang/xianka2.php`
-- **请求方式**：GET
-- **参数**：
-  - `id`：开发者 ID（示例值 `88888888`）
-  - `key`：开发者 KEY（示例值 `88888888`）
-- **返回格式**：JSON，主要使用 `data` 数组中的 `top`（排名）和 `name`（型号）。
-- **注意事项**：
-  - 公共密钥每分钟调用频次有限，大量使用会被限制。
-  - 接口仅收录**笔记本移动版**显卡，台式机/服务器显卡可能无法匹配。
+## 安全说明 / Security Notes
+- 所有 API 请求强制使用 HTTPS，防止中间人攻击。  
+  All API requests use HTTPS to prevent MITM attacks.
+- 匹配算法采用 `OrdinalIgnoreCase` 比较，杜绝了 `-like` 通配符可能引发的脚本错误。  
+  Matching uses `OrdinalIgnoreCase` comparison, eliminating potential issues from wildcard characters in `-like`.
+- 网络异常统一捕获，不泄露敏感堆栈信息。  
+  Network exceptions are caught without exposing sensitive stack traces.
+- 公共密钥 `88888888` 仅供测试，频繁使用可能被限频，请自行注册替换。  
+  The public key `88888888` is for testing only. Heavy usage may be rate-limited, please register your own.
 
-## 常见问题排查
-| 现象                           | 原因及解决                                                                 |
-| ------------------------------ | -------------------------------------------------------------------------- |
-| 脚本无法运行，提示执行权限错误 | 默认执行策略为 Restricted。请在 PowerShell 中先用 `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` 临时放行。 |
-| 未检测到显卡                   | 显卡驱动未安装或异常；系统精简版可能缺失 CIM 类。请重新安装驱动。          |
-| API 返回“通讯密钥错误”         | 同一公钥并发过大，或被临时封禁。建议去 [apihz.cn](https://www.apihz.cn) 注册并替换脚本开头的 `$apiUrl` 中的 `id` 和 `key`。 |
-| 显卡未在榜单中找到             | 显卡可能是台式机型号或服务器/专业卡，也可能刚刚发布尚未收录。              |
-| 网络请求失败                   | 检查防火墙、代理，确认 `cn.apihz.cn` 可达。可以尝试浏览器访问相同 URL 测试。|
+## API 接口说明 / API Details
+| 硬件     | 接口地址 / Endpoint                                                   |
+| -------- | --------------------------------------------------------------------- |
+| GPU (笔记本) | `https://cn.apihz.cn/api/bang/xianka2.php?id=<ID>&key=<KEY>` |
+| CPU (桌面)   | `https://cn.apihz.cn/api/bang/cpu1.php?id=<ID>&key=<KEY>`    |
+- **请求方式 / Method**：GET  
+- **成功返回**：`{"code":200, "data":[{"top":1, "name":"RTX 4090 Laptop"}, ...]}`  
+- **公共密钥限频**：每分钟调用次数有限，建议注册 [apihz.cn](https://www.apihz.cn) 获取个人凭证。  
+  Public key rate limit: limited calls per minute, it's recommended to register for your own credentials.
 
-## 如何更换 API 密钥
-1. 用文本编辑器打开 `Get-GpuRank.ps1`。
-2. 找到脚本开头的 `$apiUrl` 变量：
-   ```powershell
-   $apiUrl = "https://cn.apihz.cn/api/bang/xianka2.php?id=88888888&key=88888888"
+## 常见问题 / FAQ
+| 现象 / Issue                               | 解决方式 / Solution                                                                 |
+| ----------------------------------------- | ----------------------------------------------------------------------------------- |
+| 未检测到硬件 / No hardware detected       | 安装最新驱动，确认 CIM 类可用。 / Install latest drivers, ensure CIM classes exist. |
+| API 返回“通讯密钥错误” / “Key error”        | 公共 KEY 超频，注册个人 ID/KEY 替换。 / Register personal ID/KEY and replace.       |
+| 硬件未在榜单中找到 / Not found in list     | 接口仅收录笔记本显卡和桌面 CPU，极新或极旧型号可能未录入。 / Only mobile GPUs and desktop CPUs are covered; very new/old models may be missing. |
+| 脚本无法运行 / Script cannot run          | 执行 `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` 临时放行。 / Allow execution with the given command. |
+
+## 更换密钥 / How to Replace the Key
+1. 打开脚本，找到 `$api` 变量。 / Open the script and locate the `$api` variable.
+2. 将 `id=88888888&key=88888888` 替换为自己的 `id` 和 `key`。 / Replace `id=88888888&key=88888888` with your own `id` and `key`.
+3. 保存脚本即可。 / Save and run.
+
+## 版本历史 / Version History
+- v3.0 (2026-04-26) — 全面中英双语输出与文档 / Full bilingual output and documentation.
+- v2.0 — 增加 CPU 查询与整合脚本 / Added CPU query and combined script.
+- v1.0 — 初版显卡查询 / Initial GPU query release.
